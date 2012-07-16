@@ -5,8 +5,11 @@
 
 from optparse import OptionParser
 
+usage = 'usage: %prog getouput [options]\n'
+usage = usage + 'Collect all the outputs from crab sandbox or SE.'
+
 parser = OptionParser(
-    usage = 'usage: %prog getouput [options]'
+    usage = usage 
 )
 
 parser.add_option(

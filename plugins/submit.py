@@ -5,8 +5,11 @@
 
 from optparse import OptionParser
 
+usage = 'usage: %prog submit [options]\n'
+usage = usage + 'Submit theta jobs to the grid.'
+
 parser = OptionParser(
-    usage = 'usage: %prog preprocess [options] [file1] [file2] ...'
+    usage = usage
 )
 
 parser.add_option(

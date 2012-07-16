@@ -21,9 +21,13 @@ def parse_model(model):
 
 from optparse import OptionParser
 
+usage = 'usage: %prog postprocess [options] [file1] [file2] ...\n'
+usage = usage + 'Prepare theta for grid submission.'
+
 parser = OptionParser(
-    usage = 'usage: %prog preprocess [options] [file1] [file2] ...'
+    usage = usage
 )
+
 parser.add_option(
     '--model', type='string',
     help='Input model and argments in the format "file: arg1 = val1, arg2 = val2, ..."'
@@ -73,13 +77,13 @@ file.write('# Building the statistical model\n')
 file.write('args = %s\n\n' % str(opts))
 file.write('model = build_model(**args)\n\n')
 if options.analysis == 'summary':
-    file.write('model_summary(model)')
+    file.write('model_summary(model)\n')
 elif options.analysis == 'bayesian':
-    file.write('bayesian_limits(model, run_theta = False, write_debuglog = False)')
+    file.write('results = bayesian_limits(model, run_theta = False)\n')
 elif options.analysis == 'cls-lr':
-    file.write("cls_limits(model, ts = 'lr', run_theta = False, write_debuglog = False)")
+    file.write("results = cls_limits(model, ts = 'lr', run_theta = False, write_debuglog = False)\n")
 elif options.analysis == 'cls-lhclike':
-    file.write("cls_limits(model, ts = 'lhclike', run_theta = False, write_debuglog = False)")
+    file.write("results = cls_limits(model, ts = 'lhclike', run_theta = False, write_debuglog = True)\n")
 file.close()
 
 commands = []
