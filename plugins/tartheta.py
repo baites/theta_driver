@@ -23,6 +23,10 @@ command = 'tar cvfzh %s.tgz %s/analysis %s/analysis.py %s/utils.py %s/*.root' % 
     options.workdir, options.workdir, options.workdir, options.workdir, options.workdir
 )
 
+#command = 'tar cvfzh %s.tgz %s/analysis %s/analysis.py %s/utils.py' % (
+#            options.workdir, options.workdir, options.workdir, options.workdir
+#)
+
 import subprocess
 print command
 subprocess.call(command, shell=True)

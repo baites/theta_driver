@@ -4,12 +4,13 @@
 #
 
 
-def parse_model(model):
+def parse_options(model):
     """ Parse model command line """
     info = model.split(':')
-    assert len(info) > 1, 'Syntax error when parsing model command line.'
     module = info[0]
     assert module != '', 'Syntax error no model name.'
+    if len(info) == 1:
+        return module, {}
     opts = info[1].split(',')
     args = {}
     for opt in opts:
@@ -62,28 +63,32 @@ if not os.path.exists(options.workdir):
     os.makedirs(options.workdir)
 
 # Processing model information
-module, opts = parse_model(options.model) 
+model, model_opts = parse_options(options.model) 
+analysis, analysis_opts = parse_options(options.analysis)
 
 import shutil
 
 # Copy the content of the model in 
-shutil.copy(module+'.py', '%s/analysis.py' % options.workdir)
+shutil.copy(model+'.py', '%s/analysis.py' % options.workdir)
 
 # Append the model file by adding the options and actions
 file = open('%s/analysis.py' % options.workdir, 'a')
 file.write('\n\n')
 file.write('# Code introduced by theta_driver\n\n')
 file.write('# Building the statistical model\n')
-file.write('args = %s\n\n' % str(opts))
+file.write('args = %s\n\n' % str(model_opts))
 file.write('model = build_model(**args)\n\n')
-if options.analysis == 'summary':
+if analysis == 'summary':
     file.write('model_summary(model)\n')
-elif options.analysis == 'bayesian':
-    file.write('results = bayesian_limits(model, run_theta = False)\n')
-elif options.analysis == 'cls-lr':
-    file.write("results = cls_limits(model, ts = 'lr', run_theta = False, write_debuglog = False)\n")
-elif options.analysis == 'cls-lhclike':
-    file.write("results = cls_limits(model, ts = 'lhclike', run_theta = False, write_debuglog = True)\n")
+elif analysis == 'bayesian':
+    file.write('args = %s\n\n' % str(analysis_opts))
+    file.write('results = bayesian_limits(model, run_theta = False, **args)\n')
+elif analysis == 'cls-lr':
+    file.write('args = %s\n\n' % str(analysis_opts))
+    file.write("results = cls_limits(model, ts = 'lr', run_theta = False, write_debuglog = True, **args)\n")
+elif analysis == 'cls-lhclike':
+    file.write('args = %s\n\n' % str(analysis_opts))    
+    file.write("results = cls_limits(model, ts = 'lhclike', run_theta = False, write_debuglog = True, **args)\n")
 file.close()
 
 commands = []
