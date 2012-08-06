@@ -83,11 +83,8 @@ if analysis == 'summary':
 elif analysis == 'bayesian':
     file.write('args = %s\n\n' % str(analysis_opts))
     file.write('results = bayesian_limits(model, run_theta = False, **args)\n')
-elif analysis == 'cls-lr':
+elif analysis == 'cls':
     file.write('args = %s\n\n' % str(analysis_opts))
-    file.write("results = cls_limits(model, ts = 'lr', run_theta = False, write_debuglog = True, **args)\n")
-elif analysis == 'cls-lhclike':
-    file.write('args = %s\n\n' % str(analysis_opts))    
     file.write("results = cls_limits(model, ts = 'lhclike', run_theta = False, write_debuglog = True, **args)\n")
 file.close()
 
