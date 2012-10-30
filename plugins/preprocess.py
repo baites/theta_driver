@@ -3,9 +3,41 @@
 # Victor E. Bazterra UIC (2012)
 #
 
+def parse_value(lit):
+    'Return value of numeric literal string or ValueError exception'
+    # Handle '0'
+    if lit == '0': return 0
+    # Hex/Binary
+    litneg = lit[1:] if lit[0] == '-' else lit
+    if litneg[0] == '0':
+        if litneg[1] in 'xX':
+            return int(lit,16)
+        elif litneg[1] in 'bB':
+            return int(lit,2)
+        else:
+            try:
+                return int(lit,8)
+            except ValueError:
+                pass
+    # Int/Float/Complex/String
+    try:
+        return int(lit)
+    except ValueError:
+        pass
+    try:
+        return float(lit)
+    except ValueError:
+        pass
+    try:
+        return complex(lit)
+    except ValueError:
+        pass
+    return lit
+
 
 def parse_options(model):
     """ Parse model command line """
+    global parse_value
     info = model.split(':')
     module = info[0]
     assert module != '', 'Syntax error no model name.'
@@ -14,9 +46,9 @@ def parse_options(model):
     opts = info[1].split(',')
     args = {}
     for opt in opts:
-        key = opt.split('=')[0]
-        value = opt.split('=')[1]
-        args[key.lstrip().rstrip()] = value.lstrip().rstrip()
+        key = opt.split('=')[0].lstrip().rstrip()
+        value = opt.split('=')[1].lstrip().rstrip()
+        args[key] = parse_value(value)
     return module, args
 
 
@@ -131,14 +163,26 @@ for file in dir:
         njobs = njobs + 1
 
 import string
-file = open('%s/utils/grid_theta_crab.cfg' % os.environ['THETA_DRIVER_PATH'])
-cfg = string.Template(file.read())
-file.close()
-cfg = cfg.safe_substitute(
-    njobs = njobs, 
-    user = os.environ['USER'],
-    files = ','.join(files),
-    remotedir = options.remotedir 
-)
+
+if options.remotedir:
+    file = open('%s/utils/grid_theta_crab_remotedir.cfg' % os.environ['THETA_DRIVER_PATH'])
+    cfg = string.Template(file.read())
+    file.close()
+    cfg = cfg.safe_substitute(
+        njobs = njobs, 
+        user = os.environ['USER'],
+        files = ','.join(files),
+        remotedir = options.remotedir 
+    )
+else:
+    file = open('%s/utils/grid_theta_crab_cacheddir.cfg' % os.environ['THETA_DRIVER_PATH'])
+    cfg = string.Template(file.read())
+    file.close()
+    cfg = cfg.safe_substitute(
+        njobs = njobs,
+        user = os.environ['USER'],
+        files = ','.join(files),
+    )
+
 file = open('%s/grid_theta_crab.cfg' % options.workdir, 'w')
 file.write(cfg)

@@ -29,16 +29,20 @@ cmds = [
 ]
 
 import commands, os
-output = commands.getstatusoutput('lcg-ls %s' % options.remoteurl)
 
-if output[0] == 0:
+if options.remoteurl:
+    output = commands.getstatusoutput('lcg-ls %s' % options.remoteurl)
+    if output[0] == 0:
+        for file in output[1].split('\n'):
+            file = os.path.basename(file)
+            cmds.append('lcg-cp -D srmv2 %s/%s file:///%s/analysis/cache/%s' % (
+                options.remoteurl, file, os.path.abspath(options.workdir), file
+            ))
+            cmds.append('cd %s/analysis/cache; tar xfz %s; rm %s' % (options.workdir, file, file))
+else:
+    output = commands.getstatusoutput('ls %s/crab/res/*.tgz' % options.workdir)
     for file in output[1].split('\n'):
-        file = os.path.basename(file)
-        cmds.append('lcg-cp -D srmv2 %s/%s file:///%s/analysis/cache/%s' % (
-            options.remoteurl, file, os.path.abspath(options.workdir), file
-        ))
-        cmds.append('cd %s/analysis/cache; tar xfz %s; rm %s' % (options.workdir, file, file))
-        
+        cmds.append('mv %s %s/analysis/cache; cd %s/analysis/cache; tar xfz %s; rm %s' % (file, options.workdir, options.workdir, os.path.basename(file), os.path.basename(file)))
 
 import subprocess
 for cmd in cmds:
