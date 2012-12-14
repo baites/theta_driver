@@ -32,6 +32,10 @@ def parse_value(lit):
         return complex(lit)
     except ValueError:
         pass
+    if 'true' in lit.lower():
+        return True
+    elif 'false' in lit.lower():
+        return False
     return lit
 
 
@@ -112,6 +116,12 @@ file.write('args = %s\n\n' % str(model_opts))
 file.write('model = build_model(**args)\n\n')
 if analysis == 'summary':
     file.write('model_summary(model)\n')
+elif analysis == 'expected_asymptotic':
+    file.write('limits = get_expected_pl_limits(model)\n')
+    file.write("for sp in sorted(limits.keys()): print '%s %.4f' % (sp, limits[sp])\n")
+elif analysis == 'observed_asymptotic':
+    file.write('limits = get_observed_pl_limits(model)\n')
+    file.write("for sp in sorted(limits.keys()): print '%s %.4f' % (sp, limits[sp])\n")
 elif analysis == 'bayesian':
     file.write('args = %s\n\n' % str(analysis_opts))
     file.write('results = bayesian_limits(model, run_theta = False, **args)\n')
@@ -134,7 +144,7 @@ if os.path.exists('%s/analysis' % options.workdir):
     commands.append('cd %s; rm -rf analysis' % options.workdir)
 commands.append('cd %s; %s/utils/theta-auto.py analysis.py' % (options.workdir, os.environ['THETA_PATH']))
 
-if not options.analysis == 'summary':
+if not options.analysis == 'summary' or not 'asymptotic' in options.analysis:
     commands = commands + [
         'cd %s; tar cz analysis/ > analysis.tgz' % options.workdir,
         'cp %s/utils/grid_theta_executable.* %s' % (os.environ['THETA_DRIVER_PATH'], options.workdir)
