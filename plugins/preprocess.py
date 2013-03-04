@@ -36,6 +36,8 @@ def parse_value(lit):
         return True
     elif 'false' in lit.lower():
         return False
+    if 'EMPTY' in lit:
+        return ''
     return lit
 
 
@@ -47,7 +49,7 @@ def parse_options(model):
     assert module != '', 'Syntax error no model name.'
     if len(info) == 1:
         return module, {}
-    opts = info[1].split(',')
+    opts = ':'.join(info[1:]).split(';')
     args = {}
     for opt in opts:
         key = opt.split('=')[0].lstrip().rstrip()
@@ -58,8 +60,15 @@ def parse_options(model):
 
 from optparse import OptionParser
 
-usage = 'usage: %prog postprocess [options] [file1] [file2] ...\n'
-usage = usage + 'Prepare theta for grid submission.'
+usage = 'usage: %prog preprocess [options] [file1] [file2] ...\n'
+usage = usage + 'Prepare theta for running different statistical analysis.\n'
+usage = usage + 'Analysis available are :\n'
+usage = usage + '  summary               information about the statistical model\n'
+usage = usage + '  mle                   maximum likelihood estimation of nuisance parameters\n'
+usage = usage + '  expected_asymptotic   expected limit using asymptotic approximation.\n'
+usage = usage + '  observed_asymptotic   observed limit using asymptotic approximation.\n'
+usage = usage + '  bayesian              beyasian limits.\n'
+usage = usage + '  cls                   cls limits.\n'
 
 parser = OptionParser(
     usage = usage
@@ -116,6 +125,25 @@ file.write('args = %s\n\n' % str(model_opts))
 file.write('model = build_model(**args)\n\n')
 if analysis == 'summary':
     file.write('model_summary(model)\n')
+elif analysis == 'mle':
+    file.write('args = %s\n\n' % str(analysis_opts))
+    command = """
+execfile('utils.py')
+print 'Fitting rate only'
+res = ml_fit(model, signal_processes = [''])
+for p in res['']: print p, res[''][p][0][0]
+factors = print_obsproc_factors_rateonly(model)
+file = open('factors.py', 'w')
+file.write(repr(factors))
+file.close()
+apply_factors(model, factors)
+tables = model_summary(model)
+generate_yield_table(tables['rate_table'])
+print 'Fitting all the parameters'
+res = ml_fit(model, signal_processes = [''], nuisance_constraint = '')
+for p in res['']: print p, res[''][p][0][0]
+"""
+    file.write(command)
 elif analysis == 'expected_asymptotic':
     file.write('limits = get_expected_pl_limits(model)\n')
     file.write("for sp in sorted(limits.keys()): print '%s %.4f' % (sp, limits[sp])\n")
@@ -142,9 +170,11 @@ for arg in args:
 # Execute theta to produce only cfg files
 if os.path.exists('%s/analysis' % options.workdir):
     commands.append('cd %s; rm -rf analysis' % options.workdir)
+if options.analysis == 'mle':
+    commands.append('cp %s/utils/utils.py %s' % (os.environ['THETA_DRIVER_PATH'], options.workdir))
 commands.append('cd %s; %s/utils/theta-auto.py analysis.py' % (options.workdir, os.environ['THETA_PATH']))
 
-if not options.analysis == 'summary' or not 'asymptotic' in options.analysis:
+if not analysis in ['summary', 'mle', 'expected_asymptotic', 'observed_asymptotic']: 
     commands = commands + [
         'cd %s; tar cz analysis/ > analysis.tgz' % options.workdir,
         'cp %s/utils/grid_theta_executable.* %s' % (os.environ['THETA_DRIVER_PATH'], options.workdir)
@@ -162,7 +192,7 @@ for command in commands:
 # Prepare crab cfg file
 
 # This is only if a report is not issued
-if options.analysis == 'summary':
+if options.analysis in ['summary','mle']:
     sys.exit(0)
 
 # Reads how many cfg files are generated
